@@ -195,7 +195,7 @@ export function DreamWorld({ active, muted, onEvent }: DreamWorldProps) {
 
     const signalGeometry = new THREE.OctahedronGeometry(0.62, 0);
     const signals: THREE.Mesh[] = [];
-    const signalPositions = [
+    const signalPositions: Array<[number, number, number]> = [
       [-9, 1.4, 9], [13, 1.4, 4], [-22, 1.4, 17], [5, 1.4, -22], [27, 1.4, -3],
     ];
     signalPositions.forEach(([x, y, z], index) => {
@@ -204,7 +204,7 @@ export function DreamWorld({ active, muted, onEvent }: DreamWorldProps) {
         new THREE.MeshStandardMaterial({ color: index % 2 ? 0xff668e : 0xffe36e, emissive: 0x5c3d17, emissiveIntensity: 0.5 }),
       );
       signal.position.set(x, y, z);
-      signal.userData.collected = false;
+      signal.userData["collected"] = false;
       signals.push(signal);
       scene.add(signal);
     });
@@ -252,7 +252,7 @@ export function DreamWorld({ active, muted, onEvent }: DreamWorldProps) {
 
     const controls = mount.querySelectorAll<HTMLButtonElement>("[data-move]");
     const setMove = (button: HTMLButtonElement, value: boolean) => {
-      const direction = button.dataset.move;
+      const direction = button.dataset["move"];
       if (direction === "forward" || direction === "back" || direction === "left" || direction === "right") mobile[direction] = value;
     };
     controls.forEach((button) => {
@@ -264,8 +264,8 @@ export function DreamWorld({ active, muted, onEvent }: DreamWorldProps) {
     let frame = 0;
     const animate = () => {
       frame = window.requestAnimationFrame(animate);
-      const time = clock.getElapsedTime();
       const delta = Math.min(clock.getDelta(), 0.033);
+      const time = clock.elapsedTime;
       const forward = Number(keys.has("w") || keys.has("arrowup") || mobile.forward) - Number(keys.has("s") || keys.has("arrowdown") || mobile.back);
       const side = Number(keys.has("d") || keys.has("arrowright") || mobile.right) - Number(keys.has("a") || keys.has("arrowleft") || mobile.left);
       if (side && document.pointerLockElement !== renderer.domElement) yaw -= side * delta * 1.35;
@@ -286,21 +286,21 @@ export function DreamWorld({ active, muted, onEvent }: DreamWorldProps) {
         const wingPulse = Math.sin(time * 7 + npc.phase) * 0.35;
         const wingA = npc.group.children[3];
         const wingB = npc.group.children[4];
-        wingA.rotation.y = wingPulse;
-        wingB.rotation.y = -wingPulse;
+        if (wingA) wingA.rotation.y = wingPulse;
+        if (wingB) wingB.rotation.y = -wingPulse;
         if (npc.group.position.distanceTo(camera.position) < 3.4 && time - lastDialogue > 4) {
           lastDialogue = time;
           const lines = ["te vimos cerrar los ojos", "la puerta azul recuerda tu nombre", "no mires al sol cuadrado", "faltan cinco señales", "esta computadora sueña contigo"];
-          eventRef.current({ type: "dialogue", speaker: `OJO_${String(index + 1).padStart(2, "0")}`, text: lines[index % lines.length] });
+          eventRef.current({ type: "dialogue", speaker: `OJO_${String(index + 1).padStart(2, "0")}`, text: lines[index % lines.length] ?? "te estábamos esperando" });
         }
       });
       watchers.forEach((watcher) => watcher.lookAt(camera.position.x, watcher.position.y, camera.position.z));
       signals.forEach((signal, index) => {
-        if (signal.userData.collected) return;
+        if (signal.userData["collected"]) return;
         signal.rotation.y = time * 1.5 + index;
         signal.position.y = 1.4 + Math.sin(time * 2 + index) * 0.25;
         if (signal.position.distanceTo(camera.position) < 2.25) {
-          signal.userData.collected = true;
+          signal.userData["collected"] = true;
           signal.visible = false;
           collected += 1;
           eventRef.current({ type: "signal", count: collected });
